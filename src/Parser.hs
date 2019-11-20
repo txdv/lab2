@@ -116,31 +116,6 @@ data JsonValue = JsonInt Int | JsonString [Char] | JsonList [JsonValue] | JsonMa
 anychar = sat (\c -> True)
 jstring = do { char '"'; a <- many (sat ('"' /=)); char '"'; return $ JsonString a }
 
-droplast [] = []
-droplast [_] = []
-droplast (x:xs) = x : droplast xs
-
-jstring2 = do { char '"'; a <- unescape; char '"'; return $ JsonString a } where
-  unescape = do
-    t <- many $ sat (/= '\"')
-    if last t == '\\' then do { rest <- unescape; return $ droplast t ++ rest }
-                      else return t
-
-{-
-jstring2 = do { char '"'; a <- unescape; char '"'; return $ JsonString a } where
-
-jstring2 = do { char '"'; a <- unescape; char '"'; return $ JsonString a } where
-  unescape = do { char '\''; char '"'; return $ item } <|>
-    t <- many $ sat (/= '\"')
-    if last t == '\\' then do { rest <- unescape; return $ droplast t ++ rest }
-                      else return t
--}
---blabla = do { char '\\'; char '"'; blabla; return '"' } <|> do { char '"' } <|> do { i <- item; blabla; return i }
---blabla = do { string "\\\""; blabla; return "\"" } <|> do { string "\"" } <|> do { i <- many item; blabla; return i }
---blabla = do { string "\\\""; blabla; return "\"" } <|> do { s <- many $ sat (/= '\"'); char '"'; return s }
-
---'' <|> do { char '"'; return mzero } <|> do { return item }
-
 jint = do { int <- many1 (sat isDigit); return $ JsonInt (strToInt int) }
 
 jmap = do
@@ -150,7 +125,7 @@ jmap = do
   return $ JsonMap a
 
 jkvp = do
-  key <- jstring2
+  key <- jstring
   symb ":"
   value <- jvalue
   return (key, value)
@@ -161,7 +136,7 @@ jlist = do
   symb "]"
   return $ JsonList a
 
-jvalue = jstring2 <|> jint <|> jmap
+jvalue = jstring <|> jint <|> jmap
 
 charToInt '0' = 0
 charToInt '1' = 1
@@ -194,23 +169,12 @@ one = JsonInt 5
 {-
 main :: IO ()
 main = do
-  print $ apply (symb "*") "*"
-  print $ apply expr " 1 + 2 * 3"
-  print $ apply expr " (1 + 2) * 3"
-  print $ apply jstring "\"abc\""
-  print $ apply jvalue "123"
   print $ apply jvalue "{\"a\":2}"
   print $ apply jvalue "{\"a\":2,\"b\":3}"
   print $ apply jlist "[1]"
   print $ apply jlist "[1,2]"
   print $ apply jlist "[1,2,\"a\"]"
-  print $ apply (string "YOU") "YOU"
-  print $ apply jstring "\"abc\\\"bcd\""
-  print $ apply blabla "nesamone"
-  print $ apply blabla "abc\""
-  print $ apply blabla "abc\\\"def\""
   print $ apply jmap "{\"a\":\"b\"}"
   print $ apply jmap "{\"a\":2}"
   print $ apply jmap "{\"a\": 2 }"
-  print $ apply jvalue "123"
 -}

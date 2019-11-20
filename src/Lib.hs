@@ -3,7 +3,7 @@ module Lib (
   , bla
 ) where
 
-bla = 5
+bla = 2
 
 someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc = putStrLn "Hello World!"
