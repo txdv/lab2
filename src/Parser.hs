@@ -1,7 +1,7 @@
 module Parser (
-  JsonValue(JsonInt),
+  JsonValue(JsonInt, JsonString),
   apply,
-  jvalue,
+  jint, jstring, jvalue,
   jlist,
   one,
   getValue

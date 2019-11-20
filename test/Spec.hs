@@ -1,5 +1,8 @@
 import Lib(bla)
-import Parser(JsonValue(JsonInt), jvalue, apply, one, getValue)
+import Parser(
+  JsonValue(JsonInt, JsonString),
+  jint, jstring, jvalue,
+  apply, getValue)
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -11,10 +14,16 @@ parserTests = [
   parseJsonInt "1" 1,
   parseJsonInt "5" 5,
   parseJsonInt "42" 42,
-  parseJsonInt "123" 123]
+  parseJsonInt "123" 123,
+  parseJsonString "\"abc\"" "abc"]
 
 parseJsonInt string int = testCase ("Parse json value '" ++ string ++ "' successfully")
-  (assertEqual "should parse json value" (getValue $ apply jvalue string) (JsonInt int))
+  (assertEqual "should parse json int" (getValue $ apply jvalue string) (JsonInt int))
+
+
+parseJsonString :: String -> String -> TestTree
+parseJsonString jsonString expectedString = testCase ("Parse json string '" ++ jsonString ++ "' to '" ++ expectedString ++ "'")
+  (assertEqual "should parse json string" (getValue $ apply jstring jsonString) (JsonString expectedString))
 
 tests = [ sayYoTest, add5Test, testBla ]
 
