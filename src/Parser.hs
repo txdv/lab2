@@ -1,5 +1,5 @@
 module Parser (
-  JsonValue(JsonInt, JsonString),
+  JsonValue(JsonInt, JsonString, JsonList, JsonMap),
   apply,
   jint, jstring, jvalue,
   jlist,
@@ -10,6 +10,9 @@ module Parser (
 import Control.Applicative -- Otherwise you can't do the Applicative instance.
 import Control.Monad (MonadPlus, mplus, mzero, liftM, ap)
 import Data.Char (ord, isDigit)
+
+data JsonValue = JsonInt Int | JsonString [Char] | JsonList [JsonValue] | JsonMap [(JsonValue, JsonValue)]
+  deriving (Show, Eq)
 
 newtype Parser a = Parser (String -> [(a, String)])
 
@@ -110,9 +113,6 @@ symb cs = token (string cs)
 apply :: Parser a -> String -> [(a,String)]
 apply p = parse (do {space; p})
 
-data JsonValue = JsonInt Int | JsonString [Char] | JsonList [JsonValue] | JsonMap [(JsonValue, JsonValue)]
-  deriving (Show, Eq)
-
 anychar = sat (\c -> True)
 jstring = do { char '"'; a <- many (sat ('"' /=)); char '"'; return $ JsonString a }
 
@@ -120,7 +120,7 @@ jint = do { int <- many1 (sat isDigit); return $ JsonInt (strToInt int) }
 
 jmap = do
   symb "{";
-  a <- sepby jkvp (symb ":")
+  a <- sepby jkvp (symb ",")
   symb "}";
   return $ JsonMap a
 
@@ -136,7 +136,7 @@ jlist = do
   symb "]"
   return $ JsonList a
 
-jvalue = jstring <|> jint <|> jmap
+jvalue = jstring <|> jint <|> jmap <|> jlist <|> jmap
 
 charToInt '0' = 0
 charToInt '1' = 1
