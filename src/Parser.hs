@@ -135,7 +135,7 @@ jlist = do
   symb "]"
   return $ JsonList a
 
-jvalue = jstring <|> jint <|> jmap <|> jlist <|> jmap
+jvalue = jint <|> jstring <|> jlist <|> jmap
 
 charToInt '0' = 0
 charToInt '1' = 1
