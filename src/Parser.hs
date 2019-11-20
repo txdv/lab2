@@ -3,7 +3,6 @@ module Parser (
   apply,
   jint, jstring, jvalue,
   jlist,
-  one,
   getValue
 ) where
 
@@ -153,28 +152,3 @@ strToInt str = strToInt' str 0
 strToInt' (l:"") n = n * 10 + (charToInt l)
 strToInt' (l:ls) n = strToInt' ls (n * 10 + (charToInt l))
 strToInt' "" n = n
-
-
-expr = term `chainl1` addop
-term = factor `chainl1` mulop
-factor = digit +++ do {symb "("; n <- expr; symb ")"; return n}
-digit = do {x <- token (sat isDigit); return (ord x - ord '0')}
-
---Parser (Int -> Int -> Int)
-addop = do {symb "+"; return (+)}
-mulop = do {symb "*"; return (*)}
-
-one = JsonInt 5
-
-{-
-main :: IO ()
-main = do
-  print $ apply jvalue "{\"a\":2}"
-  print $ apply jvalue "{\"a\":2,\"b\":3}"
-  print $ apply jlist "[1]"
-  print $ apply jlist "[1,2]"
-  print $ apply jlist "[1,2,\"a\"]"
-  print $ apply jmap "{\"a\":\"b\"}"
-  print $ apply jmap "{\"a\":2}"
-  print $ apply jmap "{\"a\": 2 }"
--}

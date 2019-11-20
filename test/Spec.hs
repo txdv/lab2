@@ -22,7 +22,8 @@ parserTests = [
   parseJsonValue "[1, 2, \"asd\"]" (JsonList [JsonInt 1, JsonInt 2, JsonString "asd"]),
   parseJsonValue "{}" (JsonMap []),
   parseJsonValue "{\"a\":2}" (JsonMap [(JsonString "a", JsonInt 2)]),
-  parseJsonValue "{\"a\":2, \"b\":3}" (JsonMap [(JsonString "a", JsonInt 2), (JsonString "b", JsonInt 3)])]
+  parseJsonValue "{\"a\":2, \"b\":3}" (JsonMap [(JsonString "a", JsonInt 2), (JsonString "b", JsonInt 3)]),
+  parseJsonValue "{\"a\":2, \"b\":[1,2,3]}" (JsonMap [(JsonString "a", JsonInt 2), (JsonString "b", JsonList [JsonInt 1, JsonInt 2, JsonInt 3])])]
 
 parseJsonValue :: String -> JsonValue -> TestTree
 parseJsonValue jsonString expectedJsonValue = testCase ("Parse json string '" ++ jsonString ++"' and get " ++ (show expectedJsonValue))
