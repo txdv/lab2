@@ -277,9 +277,16 @@ main = do
   putStrLn "ship field"
   printTable $ putMovesTable emptyTable $ map coordHit field
   args <- getArgs
-  if length args == 2 then
+  if length args == 2 then do
     let [gameId, player] = args
-    in step field gameId player
+    _ <- if (args !! 1) == "A" then do
+      randomList <- shuffleM allCoordinates
+      _ <- sendMessage (toJsonCoord (Coord (head randomList))) player gameId
+      return $ ()
+    else do
+      return $ ()
+
+    step field gameId player
   else do
     let [file] = args
     content <- readFile file
