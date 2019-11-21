@@ -2,13 +2,13 @@ module Main where
 
 import Lib
 import Control.Lens
-import Network.Wreq
 import Data.List
 import Data.Char(ord)
 import Parser(apply, JsonValue(JsonMap, JsonList, JsonString, JsonInt), jvalue, apply, getValue)
 import System.Random.Shuffle
 import System.Environment
 import qualified Data.ByteString.Lazy.Char8 as B
+import RemoteGame
 
 data MoveResult = Miss | Hit
   deriving Show
@@ -19,10 +19,10 @@ data Coordinate = Coord (Int, Int) | CoordPrev (Int, Int) MoveResult Coordinate 
 resultToJson Miss = "MISS"
 resultToJson Hit = "HIT"
 
-toJson (x, y) = "[\"" ++ xJson x ++ "\"," ++ yJson y ++ "\"]"
+toJson (x, y) = "[\"" ++ xJson x ++ "\",\"" ++ yJson y ++ "\"]"
 toJsonCoord (Coord coord) = "{\"coord\":" ++ toJson coord ++ "}"
 toJsonCoord (GameOver prev) = "{\"coord\":[],\"prev\":" ++ toJsonCoord prev ++ "}"
-toJsonCoord (CoordPrev coord result prev) = "{\"coord\":[],\"result\":\"" ++ resultToJson result ++ "\",\"prev\":" ++ toJsonCoord prev ++ "}"
+toJsonCoord (CoordPrev coord result prev) = "{\"coord\":" ++ toJson coord ++ ",\"result\":\"" ++ resultToJson result ++ "\",\"prev\":" ++ toJsonCoord prev ++ "}"
 
 convertCoord (JsonList [JsonString a, JsonString b]) = Coord (convertCoord' a, convertCoord' b)
 convertCoord (JsonMap [(JsonString "coord", b)]) = convertCoord b
@@ -228,13 +228,11 @@ printTable x = putStrLn $ formatTable x
 coordHit :: (Int, Int) -> PlayerMove
 coordHit coord = Move coord Hit
 
-main :: IO ()
-main = do
-  field <- randomField
-  putStrLn "ship field"
-  --printTable $ putMovesTable emptyTable $ map (coordHit) field
-  [file] <- getArgs
-  fileContents <- readFile file
+step :: [(Int, Int)] -> String -> String -> IO ()
+step field gameId player = do
+  (responseCode, fileContents) <- getMessage player gameId
+  putStrLn $ "responseCode: " ++ show responseCode ++ " -> '" ++ fileContents ++ "'"
+  --fileContents <- readFile file
   let res = getValue $ apply jvalue fileContents
   let coord = convertCoord res
   let moves = getMoves coord
@@ -244,25 +242,22 @@ main = do
   let player1hits = [currentHit] ++ (map moveCoord player1)
   let leftFields = filter (`elem` player1hits) player1hits
   r <- kitas player2
-  if length leftFields == 0 then -- endgame
-    putStrLn $ show $ GameOver coord
-  else
-    putStrLn $ show $ CoordPrev (head r) isHit coord
+  let nextMove = head r
+  if length leftFields == 0 then do
+    putStrLn "GAME OVER"
+    _ <- sendMessage (toJsonCoord (GameOver coord)) player gameId
+    return $ ()
+  else do
+    let answer = (CoordPrev nextMove isHit coord)
+    let textAnswer = toJsonCoord answer
+    putStrLn textAnswer
+    _ <- sendMessage textAnswer player gameId
+    step field gameId player
   putStrLn $ show leftFields
 
-  putStrLn $ toJsonCoord (Coord (1, 2))
-  putStrLn $ toJsonCoord (GameOver (Coord (1, 2)))
-  putStrLn $ toJsonCoord (GameOver (CoordPrev (2,2) Miss (Coord (1, 2))))
-
-  {-
-  putShowLn $ coord
-  putShowLn $ moves
-  putShowLn $ player2
-  putStrLn $ formatTable $ putMovesTable emptyTable player1
-  putStrLn ""
-  putStrLn $ formatTable $ putMovesTable emptyTable player2
-  putShowLn $ nextMove player2
-  putStrLn $ show r
-  -}
-  --randomField <- randomShipField
-  --putStrLn $ formatTable $ putMovesTable emptyTable $ map (\coord -> Move coord Hit) randomField
+main :: IO ()
+main = do
+  field <- randomField
+  putStrLn "ship field"
+  [gameId, player] <- getArgs
+  step field gameId player

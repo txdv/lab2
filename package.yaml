@@ -21,6 +21,12 @@ description:         Please see the README on GitHub at <https://github.com/txdv
 
 dependencies:
 - base >= 4.7 && < 5
+- lens
+- bytestring
+- random-shuffle
+- split
+- http-conduit
+- case-insensitive
 
 library:
   source-dirs: src
