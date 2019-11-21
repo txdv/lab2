@@ -115,13 +115,45 @@ nextMove' allMoves [] nextMoves =
   let existingCoord = map moveCoord allMoves
   in filter isValidCoord $ filter (`notElem` existingCoord) nextMoves
 
+allCoordinates = do
+  x <- [0..9]
+  y <- [0..9]
+  return $ (x, y)
+
+randomCoordinates :: IO [(Int, Int)]
+randomCoordinates = shuffleM allCoordinates
+
+type PlayerState = [PlayerMove]
+
+randomNextMove :: [PlayerMove] -> IO [(Int, Int)]
+randomNextMove moves = do
+  i <- randomCoordinates
+  let moveCoords = map moveCoord moves
+  let filtered = filter (`notElem` moveCoords) i
+  return $ filtered
+
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = rdHelper []
+  where rdHelper seen [] = seen
+        rdHelper seen (x:xs)
+          | x `elem` seen = rdHelper seen xs
+          | otherwise = rdHelper (seen ++ [x]) xs
+
+kitas :: PlayerState -> IO [(Int, Int)]
+kitas moves = do
+  nextMovesRandom <- randomNextMove moves
+  -- make it more deterministic without shuffleM
+  --let nextMovesDeterministic = nextMove moves
+  nextMovesDeterministic <- shuffleM $ nextMove moves
+  return $ (nextMovesDeterministic ++ nextMovesRandom)
+
 table = do
   a <- [0..9]
   return $ [0..9]
 
 putShowLn x = putStrLn $ show x
 
-main :: IO()
+main :: IO ()
 main = do
   [file] <- getArgs
   fileContents <- readFile file
@@ -136,5 +168,5 @@ main = do
   putStrLn ""
   putStrLn $ formatTable $ putMovesTable emptyTable player2
   putShowLn $ nextMove player2
-  putShowLn $ player2
-  putShowLn $ map moveCoord player2
+  r <- kitas player2
+  putStrLn $ show r
