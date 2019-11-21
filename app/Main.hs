@@ -13,8 +13,16 @@ import qualified Data.ByteString.Lazy.Char8 as B
 data MoveResult = Miss | Hit
   deriving Show
 
-data Coordinate = Coord (Int, Int) | CoordPrev (Int, Int) MoveResult Coordinate | GameOver | STRING String | EmptyCoord
+data Coordinate = Coord (Int, Int) | CoordPrev (Int, Int) MoveResult Coordinate | GameOver Coordinate | STRING String | EmptyCoord
   deriving Show
+
+resultToJson Miss = "MISS"
+resultToJson Hit = "HIT"
+
+toJson (x, y) = "[\"" ++ xJson x ++ "\"," ++ yJson y ++ "\"]"
+toJsonCoord (Coord coord) = "{\"coord\":" ++ toJson coord ++ "}"
+toJsonCoord (GameOver prev) = "{\"coord\":[],\"prev\":" ++ toJsonCoord prev ++ "}"
+toJsonCoord (CoordPrev coord result prev) = "{\"coord\":[],\"result\":\"" ++ resultToJson result ++ "\",\"prev\":" ++ toJsonCoord prev ++ "}"
 
 convertCoord (JsonList [JsonString a, JsonString b]) = Coord (convertCoord' a, convertCoord' b)
 convertCoord (JsonMap [(JsonString "coord", b)]) = convertCoord b
@@ -43,6 +51,28 @@ getJson searchKey map = getJson' searchKey map (getJsonMap (JsonString searchKey
 getJson' searchKey map (Just jsonValue) = jsonValue
 getJson' searchKey map a = JsonString ((show a) ++ " " ++ searchKey ++ " " ++ (show map))
 
+xJson 0 = "A"
+xJson 1 = "B"
+xJson 2 = "C"
+xJson 3 = "D"
+xJson 4 = "E"
+xJson 5 = "F"
+xJson 6 = "G"
+xJson 7 = "H"
+xJson 8 = "I"
+xJson 9 = "J"
+
+yJson 0 = "1"
+yJson 1 = "2"
+yJson 2 = "3"
+yJson 3 = "4"
+yJson 4 = "5"
+yJson 5 = "6"
+yJson 6 = "7"
+yJson 7 = "8"
+yJson 8 = "9"
+yJson 9 = "10"
+
 convertCoord' "A" = 0
 convertCoord' "B" = 1
 convertCoord' "C" = 2
@@ -53,6 +83,7 @@ convertCoord' "G" = 6
 convertCoord' "H" = 7
 convertCoord' "I" = 8
 convertCoord' "J" = 9
+
 convertCoord' "1" = 0
 convertCoord' "2" = 1
 convertCoord' "3" = 2
@@ -201,14 +232,28 @@ main :: IO ()
 main = do
   field <- randomField
   putStrLn "ship field"
-  printTable $ putMovesTable emptyTable $ map (coordHit) field
+  --printTable $ putMovesTable emptyTable $ map (coordHit) field
   [file] <- getArgs
   fileContents <- readFile file
   let res = getValue $ apply jvalue fileContents
   let coord = convertCoord res
   let moves = getMoves coord
   let [player1, player2] = splitLists moves
-  putShowLn $ map shipSize shipShapes
+  let currentHit = getCoord coord
+  let isHit = if currentHit `elem` field then Hit else Miss
+  let player1hits = [currentHit] ++ (map moveCoord player1)
+  let leftFields = filter (`elem` player1hits) player1hits
+  r <- kitas player2
+  if length leftFields == 0 then -- endgame
+    putStrLn $ show $ GameOver coord
+  else
+    putStrLn $ show $ CoordPrev (head r) isHit coord
+  putStrLn $ show leftFields
+
+  putStrLn $ toJsonCoord (Coord (1, 2))
+  putStrLn $ toJsonCoord (GameOver (Coord (1, 2)))
+  putStrLn $ toJsonCoord (GameOver (CoordPrev (2,2) Miss (Coord (1, 2))))
+
   {-
   putShowLn $ coord
   putShowLn $ moves
@@ -217,9 +262,7 @@ main = do
   putStrLn ""
   putStrLn $ formatTable $ putMovesTable emptyTable player2
   putShowLn $ nextMove player2
-  r <- kitas player2
   putStrLn $ show r
   -}
-
   --randomField <- randomShipField
   --putStrLn $ formatTable $ putMovesTable emptyTable $ map (\coord -> Move coord Hit) randomField
