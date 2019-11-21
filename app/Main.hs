@@ -70,7 +70,7 @@ convertCoord' "6" = 5
 convertCoord' "7" = 6
 convertCoord' "8" = 7
 convertCoord' "9" = 8
-convertCoord' "19" = 8
+convertCoord' "10" = 9
 
 
 {-
@@ -91,19 +91,28 @@ getCoord (CoordPrev coord _ _) = coord
 getCoord (Coord coord) = coord
 
 
---splitLists :: [a] -> [[a]]
---splitLists ls = splitLists' [[], []] ls
-splitLists' [l, r] (x:y:xs) = splitLists' [l ++ x, r ++ y] xs
-splitLists' [l, r] (x:xs)   = splitLists' [l ++ x, r     ] xs
+-- splits lists into two lists [x1, x2, x3, x4, x5, x6, ...] -> [[x1, x3, x5, ...], [x2, x4, x6, ...]]
+splitLists :: [a] -> [[a]]
+splitLists ls = splitLists' [[], []] ls
+splitLists' :: [[a]] -> [a] -> [[a]]
+splitLists' [l, r] (x:y:xs) = splitLists' [l ++ [x], r ++ [y]] xs
+splitLists' [l, r] (x:xs)   = splitLists' [l ++ [x], r      ] xs
+splitLists' acc _ = acc
 
 getMoves :: Coordinate -> [PlayerMove]
 getMoves (CoordPrev coord result prev) = [(Move (getCoord prev) result)] ++ getMoves prev
 getMoves _ = []
 
 putTable :: [[String]] -> (Int, Int) -> String -> [[String]]
-putTable table (a, b) value = let l = table in l & ix a . ix b .~ value
+putTable table (a, b) value = let l = table in l & ix b . ix a .~ value
 
 emptyTable = map (\row -> map (\element -> "   ") row) table
+
+putMoveTable table (Move coord Hit) = putTable table coord " X "
+putMoveTable table (Move coord Miss) = putTable table coord " - "
+
+putMovesTable table (move:moves) = putMovesTable (putMoveTable table move) moves
+putMovesTable table _ = table
 
 --https://stackoverflow.com/questions/856845/how-to-best-way-to-draw-table-in-console-app-c
 
@@ -117,6 +126,8 @@ table = do
 
 showTable [r:rs] = "ASD"
 
+putShowLn x = putStrLn $ show x
+
 main :: IO()
 main = do
   --putStrLn $ show (filter (\e -> e /= "a") ["a", "b"])
@@ -129,10 +140,15 @@ main = do
   let res = getValue $ apply jvalue fileContents
   let coord = convertCoord res
   let moves = getMoves coord
-  putStrLn $ show $ coord
-  putStrLn $ show $ moves
-  --putStrLn $ show $ splitLists' [[], []] moves
+  let [player1, player2] = splitLists moves
+  putShowLn $ coord
+  putShowLn $ moves
+  putShowLn $ player2
+  --putStrLn $ formatTable $ emptyTable
+  putStrLn $ formatTable $ putMovesTable emptyTable player1
+  putStrLn ""
+  putStrLn $ formatTable $ putMovesTable emptyTable player2
   --putStrLn $ show $ res
-  putStrLn $ formatTable $ putTable emptyTable (0, 0) "---"
+  --putStrLn $ formatTable $ putTable emptyTable (0, 0) "---"
   --putStrLn $ show $ putRow ["a", "b"] 1 "c"
   --putStrLn (printTable emptyTable)
