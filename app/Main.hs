@@ -99,6 +99,22 @@ divider = "───" ++ (intercalate "───" $ map (\i -> "┼") [0..8]) ++
 formatTable :: [[String]] -> String
 formatTable table = intercalate ("\n" ++ divider ++ "\n") $ map (\row -> intercalate "│" row) table
 
+add (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
+
+surounding coord = [add coord (0, 1), add coord (1, 0), add coord (0, -1), add coord (-1, 0)]
+
+isValidCoord (x, y) = x >= 0 && y >= 0 && x < 10 && y < 10
+
+moveCoord (Move coord _) = coord
+
+nextMove moves = nextMove' moves moves []
+nextMove' allMoves ((Move coord Hit):moves) nextMoves = nextMove' allMoves moves (nextMoves ++ (surounding coord))
+nextMove' allMoves ((Move _    Miss):moves) nextMoves = nextMove' allMoves moves nextMoves
+--nextMove' allMoves [] nextMoves = filter isValidCoord nextMoves
+nextMove' allMoves [] nextMoves =
+  let existingCoord = map moveCoord allMoves
+  in filter isValidCoord $ filter (`notElem` existingCoord) nextMoves
+
 table = do
   a <- [0..9]
   return $ [0..9]
@@ -119,3 +135,6 @@ main = do
   putStrLn $ formatTable $ putMovesTable emptyTable player1
   putStrLn ""
   putStrLn $ formatTable $ putMovesTable emptyTable player2
+  putShowLn $ nextMove player2
+  putShowLn $ player2
+  putShowLn $ map moveCoord player2
