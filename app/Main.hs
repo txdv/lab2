@@ -146,7 +146,6 @@ nextMove' allMoves [] nextMoves =
   let existingCoord = map moveCoord allMoves
   in filter isValidCoord $ filter (`notElem` existingCoord) nextMoves
 
-
 allCoordinatesMax max = do
   x <- [0..max]
   y <- [0..max]
@@ -166,20 +165,15 @@ randomNextMove moves = do
   let filtered = filter (`notElem` moveCoords) i
   return $ filtered
 
-removeDuplicates :: Eq a => [a] -> [a]
-removeDuplicates = rdHelper []
-  where rdHelper seen [] = seen
-        rdHelper seen (x:xs)
-          | x `elem` seen = rdHelper seen xs
-          | otherwise = rdHelper (seen ++ [x]) xs
-
 kitas :: PlayerState -> IO [(Int, Int)]
 kitas moves = do
   nextMovesRandom <- randomNextMove moves
   -- make it more deterministic without shuffleM
   --let nextMovesDeterministic = nextMove moves
   nextMovesDeterministic <- shuffleM $ nextMove moves
-  return $ (nextMovesDeterministic ++ nextMovesRandom)
+  putStrLn $ ("HERE: " ++ (show moves))
+  putStrLn $ show nextMovesDeterministic
+  return $ nub (nextMovesDeterministic ++ nextMovesRandom)
 
 table = do
   a <- [0..9]
@@ -207,7 +201,7 @@ randomShipField = do
   randomCoordinates <- shuffleM (allCoordinatesMax 8)
   let starting = take 5 randomCoordinates
       pos = zipWith (startShip) starting shipShapes
-  return $ removeDuplicates $ concat pos
+  return $ nub $ concat pos
 
 -- just generate probably invalid fields, check for valids one and print them out
 randomField :: IO [(Int, Int)]
@@ -236,14 +230,14 @@ step field gameId player = do
   let res = getValue $ apply jvalue fileContents
   let coord = convertCoord res
   let moves = getMoves coord
-  let [player1, player2] = splitLists moves
+  let [player2, player1] = splitLists moves
   let currentHit = getCoord coord
   let isHit = if currentHit `elem` field then Hit else Miss
   let player1hits = [currentHit] ++ (map moveCoord player1)
-  let leftFields = filter (`elem` player1hits) player1hits
+  let leftFields = filter (`elem` player1hits) field
   r <- kitas player2
   let nextMove = head r
-  if length leftFields == 0 then do
+  if length leftFields == 20 then do
     putStrLn "GAME OVER"
     _ <- sendMessage (toJsonCoord (GameOver coord)) player gameId
     return $ ()
@@ -255,9 +249,39 @@ step field gameId player = do
     step field gameId player
   putStrLn $ show leftFields
 
+step2 :: [(Int, Int)] -> String -> IO ()
+step2 field fileContents = do
+  let res = getValue $ apply jvalue fileContents
+  let coord = convertCoord res
+  let moves = getMoves coord
+  let [player2, player1] = splitLists moves
+  let currentHit = getCoord coord
+  let isHit = if currentHit `elem` field then Hit else Miss
+  let player1hits = [currentHit] ++ (map moveCoord player1)
+  let leftFields = filter (`elem` player1hits) player1hits
+  putStrLn $ "CIA: " ++ (show moves)
+  r <- kitas player2
+  let nextMove = head r
+  if length leftFields == 20 then do
+    putStrLn "GAME OVER"
+    --_ <- sendMessage (toJsonCoord (GameOver coord)) player gameId
+    return $ ()
+  else do
+    let answer = (CoordPrev nextMove isHit coord)
+    let textAnswer = toJsonCoord answer
+    putStrLn textAnswer
+
 main :: IO ()
 main = do
   field <- randomField
   putStrLn "ship field"
-  [gameId, player] <- getArgs
-  step field gameId player
+  printTable $ putMovesTable emptyTable $ map coordHit field
+  args <- getArgs
+  if length args == 2 then
+    let [gameId, player] = args
+    in step field gameId player
+  else do
+    let [file] = args
+    content <- readFile file
+    putStrLn content
+    step2 field content

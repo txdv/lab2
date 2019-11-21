@@ -13,8 +13,9 @@ sendMessage message player gameId = do
         $ setRequestBody (RequestBodyBS $ BS.pack message)
         $ baseRequest player gameId
   response <- httpBS request
+  putStrLn("sendMessage: " ++ gameId ++ "/" ++ player ++ " " ++ message)
   let code = getResponseStatusCode response
-  putStrLn ("answer:" ++ (BS.unpack $ getResponseBody response))
+  putStrLn("answer:" ++ (BS.unpack $ getResponseBody response))
   return code
 
 getMessage :: String -> String -> IO (Int, String)
@@ -25,7 +26,9 @@ getMessage player gameId = do
         $ baseRequest player gameId
   response <- httpBS request
   let code = getResponseStatusCode response
-  return (code, BS.unpack $ getResponseBody response)
+  let responseBody = BS.unpack $ getResponseBody response
+  putStrLn("getMessage: " ++ gameId ++ "/" ++ player ++ " " ++ responseBody)
+  return (code, responseBody)
 
 contentType :: String
 contentType = "application/json"
