@@ -107,11 +107,6 @@ putShowLn x = putStrLn $ show x
 
 main :: IO()
 main = do
-  --putStrLn $ show (filter (\e -> e /= "a") ["a", "b"])
-  --putStrLn $ show table
-  --i <- shuffleM table
-  --putStrLn $ show $ i
-  --putStrLn $ show $ filter (`notElem` [(0,0), (1,1)]) i
   [file] <- getArgs
   fileContents <- readFile file
   let res = getValue $ apply jvalue fileContents
@@ -121,11 +116,6 @@ main = do
   putShowLn $ coord
   putShowLn $ moves
   putShowLn $ player2
-  --putStrLn $ formatTable $ emptyTable
   putStrLn $ formatTable $ putMovesTable emptyTable player1
   putStrLn ""
   putStrLn $ formatTable $ putMovesTable emptyTable player2
-  --putStrLn $ show $ res
-  --putStrLn $ formatTable $ putTable emptyTable (0, 0) "---"
-  --putStrLn $ show $ putRow ["a", "b"] 1 "c"
-  --putStrLn (printTable emptyTable)
