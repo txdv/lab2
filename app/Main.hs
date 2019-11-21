@@ -10,14 +10,6 @@ import System.Random.Shuffle
 import System.Environment
 import qualified Data.ByteString.Lazy.Char8 as B
 
-{-
-main :: IO ()
-main = do
-  r <- get "https://bentkus.eu"
-  putStrLn $ show r
-  putStrLn $ show $ r ^. responseBody
--}
-
 data MoveResult = Miss | Hit
   deriving Show
 
@@ -72,24 +64,11 @@ convertCoord' "8" = 7
 convertCoord' "9" = 8
 convertCoord' "10" = 9
 
-
-{-
-putRow :: [String] -> Int -> String -> [String]
-putRow row pos value = row & element pos .~ value
-
-putTable :: [[String]] -> (Int, Int) -> String -> [[String]]
-putTable table (a, b) value = table & element a .~ ["a"]
--}
-
---fillTable :: Coordinate -> [[String]] -> [[String]
-
-
 data PlayerMove = Move (Int, Int) MoveResult
   deriving Show
 
 getCoord (CoordPrev coord _ _) = coord
 getCoord (Coord coord) = coord
-
 
 -- splits lists into two lists [x1, x2, x3, x4, x5, x6, ...] -> [[x1, x3, x5, ...], [x2, x4, x6, ...]]
 splitLists :: [a] -> [[a]]
@@ -123,8 +102,6 @@ formatTable table = intercalate ("\n" ++ divider ++ "\n") $ map (\row -> interca
 table = do
   a <- [0..9]
   return $ [0..9]
-
-showTable [r:rs] = "ASD"
 
 putShowLn x = putStrLn $ show x
 
