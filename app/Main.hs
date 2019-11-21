@@ -115,10 +115,13 @@ nextMove' allMoves [] nextMoves =
   let existingCoord = map moveCoord allMoves
   in filter isValidCoord $ filter (`notElem` existingCoord) nextMoves
 
-allCoordinates = do
-  x <- [0..9]
-  y <- [0..9]
+
+allCoordinatesMax max = do
+  x <- [0..max]
+  y <- [0..max]
   return $ (x, y)
+
+allCoordinates = allCoordinatesMax 9
 
 randomCoordinates :: IO [(Int, Int)]
 randomCoordinates = shuffleM allCoordinates
@@ -151,16 +154,62 @@ table = do
   a <- [0..9]
   return $ [0..9]
 
+shipShapes :: [[(Int, Int)]]
+shipShapes = [
+  [(0, 0), (1, 0), (2, 0), (3, 0)],
+  [(0, 0), (1, 0), (1, 1), (2, 1)],
+  [(0, 0), (1, 0), (0, 1), (1, 1)],
+  [(1, 0), (0, 1), (1, 1), (2, 1)],
+  [(0, 0), (1, 0), (2, 0), (2, 1)]]
+
+shipSize :: [(Int, Int)] -> (Int, Int)
+shipSize coords =
+  let xs = map fst coords
+      ys = map snd coords
+  in (foldl (max) 0 xs + 1, foldl (max) 0 ys + 1)
+
+shipFieldsLength = length $ concat shipShapes
+
+-- generate probably invalid field
+randomShipField :: IO [(Int, Int)]
+randomShipField = do
+  randomCoordinates <- shuffleM (allCoordinatesMax 8)
+  let starting = take 5 randomCoordinates
+      pos = zipWith (startShip) starting shipShapes
+  return $ removeDuplicates $ concat pos
+
+-- just generate probably invalid fields, check for valids one and print them out
+randomField :: IO [(Int, Int)]
+randomField = do
+  let attempts = [1 .. 10000]
+      t = map (\i -> randomShipField) attempts
+      listM = sequence t
+  fields <- listM
+  return $ head $ filter (\field -> length (filter isValidCoord field) == 20) fields
+
+startShip :: (Int, Int) -> [(Int, Int)] -> [(Int, Int)]
+startShip start coords = map (`add` start) coords
+
 putShowLn x = putStrLn $ show x
+
+printTable x = putStrLn $ formatTable x
+
+coordHit :: (Int, Int) -> PlayerMove
+coordHit coord = Move coord Hit
 
 main :: IO ()
 main = do
+  field <- randomField
+  putStrLn "ship field"
+  printTable $ putMovesTable emptyTable $ map (coordHit) field
   [file] <- getArgs
   fileContents <- readFile file
   let res = getValue $ apply jvalue fileContents
   let coord = convertCoord res
   let moves = getMoves coord
   let [player1, player2] = splitLists moves
+  putShowLn $ map shipSize shipShapes
+  {-
   putShowLn $ coord
   putShowLn $ moves
   putShowLn $ player2
@@ -170,3 +219,7 @@ main = do
   putShowLn $ nextMove player2
   r <- kitas player2
   putStrLn $ show r
+  -}
+
+  --randomField <- randomShipField
+  --putStrLn $ formatTable $ putMovesTable emptyTable $ map (\coord -> Move coord Hit) randomField
